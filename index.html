@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arquitectura de Procesamiento</title>
+  <meta name="description" content="Diagrama interactivo de una aplicación que recibe datos, los procesa y devuelve un resultado." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="top-text">
+      <p class="eyebrow">Diagrama de arquitectura</p>
+      <h1>Recibir <span class="arrow">→</span> Procesar <span class="arrow">→</span> Responder</h1>
+      <p class="lede">Sigue una petición desde que el cliente la envía hasta que recibe el resultado. Escribe datos en el panel, pulsa <strong>Enviar petición</strong> y observa cada capa trabajar.</p>
+    </div>
+    <div class="status" id="status" data-state="idle" role="status" aria-live="polite">
+      <span class="status-dot"></span><span id="status-text">En espera</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="diagram-card">
+      <div class="diagram" id="diagram" aria-label="Diagrama de la arquitectura">
+        <svg class="wires" id="wires" aria-hidden="true"></svg>
+
+        <div class="col col-client" data-lane="client">
+          <div class="lane-head"><span class="lane-num">00</span> Origen</div>
+          <div class="lane-body"></div>
+        </div>
+        <div class="col lane" data-lane="in">
+          <div class="lane-head"><span class="lane-num">01</span> Entrada</div>
+          <div class="lane-body"></div>
+        </div>
+        <div class="col lane" data-lane="proc">
+          <div class="lane-head"><span class="lane-num">02</span> Procesamiento</div>
+          <div class="lane-body"></div>
+        </div>
+        <div class="col lane" data-lane="out">
+          <div class="lane-head"><span class="lane-num">03</span> Salida</div>
+          <div class="lane-body"></div>
+        </div>
+      </div>
+
+      <ul class="key" aria-label="Leyenda de conexiones">
+        <li><svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" class="key-main" /></svg> Flujo principal</li>
+        <li><svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" class="key-hit" /></svg> Atajo de caché</li>
+        <li><svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" class="key-ret" /></svg> Respuesta al cliente</li>
+        <li><span class="key-dot"></span> Paquete de datos</li>
+      </ul>
+    </section>
+
+    <aside class="panel">
+      <div class="card">
+        <label class="card-title" for="input">Datos de entrada</label>
+        <p class="hint">Números separados por coma, espacio o un arreglo JSON.</p>
+        <textarea id="input" spellcheck="false">12, 45, 7, 23, 89, 34, 56</textarea>
+        <div class="chips" role="group" aria-label="Ejemplos">
+          <button class="chip" data-preset="12, 45, 7, 23, 89, 34, 56">Válidos</button>
+          <button class="chip" data-preset="[3.5, 9, 14.25, 2, 11]">JSON</button>
+          <button class="chip" data-preset="8, 15, hola, 42">Inválidos</button>
+        </div>
+        <button class="btn" id="send">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+          Enviar petición
+        </button>
+        <p class="hint small">Envía los mismos datos dos veces para ver el atajo de caché. <kbd>Ctrl</kbd>+<kbd>Enter</kbd> también envía.</p>
+      </div>
+
+      <div class="metrics">
+        <div class="metric"><span class="metric-val" id="m-req">0</span><span class="metric-label">Peticiones</span></div>
+        <div class="metric"><span class="metric-val" id="m-hit">0</span><span class="metric-label">Aciertos caché</span></div>
+        <div class="metric"><span class="metric-val" id="m-db">0</span><span class="metric-label">Filas en BD</span></div>
+        <div class="metric"><span class="metric-val" id="m-err">0</span><span class="metric-label">Rechazadas</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-row">
+          <h2 class="card-title">Registro del recorrido</h2>
+          <button class="link" id="clear-log">Limpiar</button>
+        </div>
+        <ol class="log" id="log">
+          <li class="log-empty">Todavía no hay peticiones.</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <div class="card-row">
+          <h2 class="card-title">Resultado</h2>
+          <span class="code-badge" id="code-badge" hidden></span>
+        </div>
+        <pre class="result" id="result"><span class="muted">La respuesta aparecerá aquí.</span></pre>
+      </div>
+    </aside>
+  </main>
+
+  <section class="legend">
+    <article class="legend-card" data-lane="in">
+      <span class="lane-num">01</span>
+      <h3>Entrada</h3>
+      <p>El <b>API Gateway</b> recibe la petición, autentica y limita la tasa. El <b>Validador</b> revisa el esquema y rechaza datos inválidos antes de gastar recursos.</p>
+    </article>
+    <article class="legend-card" data-lane="proc">
+      <span class="lane-num">02</span>
+      <h3>Procesamiento</h3>
+      <p>La <b>Cola</b> desacopla la recepción del trabajo. La <b>Caché</b> responde al instante si ya se calculó lo mismo; si no, el <b>Worker</b> ejecuta la lógica de negocio.</p>
+    </article>
+    <article class="legend-card" data-lane="out">
+      <span class="lane-num">03</span>
+      <h3>Salida</h3>
+      <p>La <b>Base de datos</b> persiste el resultado, el <b>Formateador</b> lo serializa a JSON y la <b>Respuesta</b> lo devuelve al cliente con su código HTTP.</p>
+    </article>
+  </section>
+
+  <footer class="foot">HTML · CSS · JavaScript · Motion</footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
